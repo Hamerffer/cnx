@@ -13,10 +13,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 type Step = "DETAILS" | "OTP" | "PASSWORD";
 
-export default function RegisterScreen() {
+export default function ForgotScreen() {
   const [step, setStep] = useState<Step>("DETAILS");
 
-  const [name, setName] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [password, setPassword] = useState("");
@@ -26,7 +26,7 @@ export default function RegisterScreen() {
   /* -------- Handlers -------- */
 
   const sendOtp = () => {
-    if (!name || !email) return;
+    if (!email) return;
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
@@ -40,11 +40,11 @@ export default function RegisterScreen() {
       setStep("PASSWORD");
   };
 
-  const completeRegister = () => {
+  const completeForgot = () => {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      alert("Registration Successful 🎉");
+      alert("Forgot Password Successful ");
       navigate("/auth/login");
     }, 1200);
   };
@@ -57,19 +57,11 @@ export default function RegisterScreen() {
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <Text style={styles.title}>Create Account</Text>
+        <Text style={styles.title}>Forgot Passwordt</Text>
 
         {/* STEP 1 */}
         {step === "DETAILS" && (
           <>
-            <TextInput
-              placeholder="Full Name"
-              placeholderTextColor={colors.textMuted}
-              value={name}
-              onChangeText={setName}
-              style={styles.input}
-            />
-
             <TextInput
               placeholder="Email Address"
               placeholderTextColor={colors.textMuted}
@@ -117,9 +109,17 @@ export default function RegisterScreen() {
               onChangeText={setPassword}
               style={styles.input}
             />
+            <TextInput
+              placeholder=" re-Enter Password"
+              placeholderTextColor={colors.textMuted}
+              secureTextEntry
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              style={styles.input}
+            />
 
-            <Button loading={loading} onPress={completeRegister}>
-              <Text style={styles.buttonText}>CREATE ACCOUNT</Text>
+            <Button loading={loading} onPress={completeForgot}>
+              <Text style={styles.buttonText}>Submit</Text>
             </Button>
           </>
         )}

@@ -16,7 +16,6 @@ import MoreMenu from "@/components/custom-menu";
 import ScreenWrapper from "@/components/screen-Wrapper";
 import { colors, radius, spacingX, spacingY } from "@/constants/theme";
 import { MaterialIcons } from "@expo/vector-icons";
-
 /* ================= SCREEN ================= */
 export default function TradeScreen() {
   const [volume, setVolume] = useState("0.01");
@@ -121,15 +120,31 @@ export default function TradeScreen() {
 
           {/* BUY / SELL BAR */}
           <View style={styles.bottomBar}>
-            <TouchableOpacity style={[styles.tradeBtn, { backgroundColor: colors.sell }]}>
+            <Button
+              style={{
+                ...styles.tradeBtn,
+                backgroundColor: colors.sell,
+              }}
+              onPress={() => {
+                // SELL action
+              }}
+            >
               <Text style={styles.tradeTitle}>SELL</Text>
               <Text style={styles.tradeSub}>BY MARKET</Text>
-            </TouchableOpacity>
+            </Button>
 
-            <TouchableOpacity style={[styles.tradeBtn, { backgroundColor: colors.buy }]}>
+            <Button
+              style={{
+                ...styles.tradeBtn,
+                backgroundColor: colors.buy,
+              }}
+              onPress={() => {
+                // BUY action
+              }}
+            >
               <Text style={styles.tradeTitle}>BUY</Text>
               <Text style={styles.tradeSub}>BY MARKET</Text>
-            </TouchableOpacity>
+            </Button>
           </View>
         </View>
       </KeyboardAvoidingView>

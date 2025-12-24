@@ -1,3 +1,4 @@
+import AppHeader from "@/components/back-chevron";
 import ScreenWrapper from "@/components/screen-Wrapper";
 import { colors } from "@/constants/theme";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -12,7 +13,6 @@ import {
   View,
 } from "react-native";
 import { Dropdown } from "react-native-element-dropdown";
-import { SafeAreaView } from "react-native-safe-area-context";
 export default function BrokerLoginScreen() {
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
@@ -21,143 +21,143 @@ export default function BrokerLoginScreen() {
 
   return (
     <ScreenWrapper>
-      <SafeAreaView style={styles.container}>
-        <ScrollView contentContainerStyle={{ padding: 16 }}>
-          {/* ---------- Broker Title ---------- */}
-          <Text style={styles.title}>F Trade Markets Ltd.</Text>
+      
+      <AppHeader title="Login" />
+      <ScrollView contentContainerStyle={{ padding: 16 }}>
+        {/* ---------- Broker Title ---------- */}
+        <Text style={styles.title}>F Trade Markets Ltd.</Text>
 
-          {/* ---------- Account Actions ---------- */}
-          <View style={styles.actionBox}>
-            {/* Demo Account */}
-            <TouchableOpacity
-              style={styles.actionRow}
-              activeOpacity={0.7}
-              onPress={() => router.push("/broker/register")}
-            >
-              <MaterialCommunityIcons
-                name="school-outline"
-                size={26}
-                color={colors.textMuted}
-              />
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={styles.actionTitle}>Open a demo account</Text>
-                <Text style={styles.actionSubtitle}>
-                  To learn trading and test strategies
-                </Text>
-              </View>
-              <MaterialCommunityIcons
-                name="chevron-right"
-                size={22}
-                color={colors.textMuted}
-              />
-            </TouchableOpacity>
-
-            <View style={styles.divider} />
-
-            {/* Real Account */}
-            <TouchableOpacity style={styles.actionRow} activeOpacity={0.7}>
-              <MaterialCommunityIcons
-                name="trending-up"
-                size={26}
-                color={colors.primary}
-              />
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={styles.actionTitle}>Open a real account</Text>
-                <Text style={styles.actionSubtitle}>
-                  Identification required for live trading
-                </Text>
-              </View>
-              <MaterialCommunityIcons
-                name="chevron-right"
-                size={22}
-                color={colors.textMuted}
-              />
-            </TouchableOpacity>
-          </View>
-
-          {/* ---------- Login Section ---------- */}
-          <Text style={styles.sectionTitle}>Login to an existing account</Text>
-
-          {/* Login Input */}
-          <View style={styles.inputContainer}>
-            <TextInput
-              placeholder="Login"
-              placeholderTextColor={colors.textMuted}
-              value={login}
-              onChangeText={setLogin}
-              style={styles.input}
-            />
-          </View>
-
-          {/* Password Input */}
-          <View style={styles.inputContainer}>
-            <TextInput
-              placeholder="Password"
-              placeholderTextColor={colors.textMuted}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              style={styles.input}
-            />
-          </View>
-
-          {/* Server Dropdown */}
-          <View style={styles.dropdownContainer}>
-            <Text style={styles.serverLabel}>Server</Text>
-            <Dropdown
-              style={styles.dropdown}
-              containerStyle={styles.dropdownBox}
-              data={[
-                { label: "Trade", value: "trade" },
-                { label: "Demo", value: "demo" },
-                { label: "Live", value: "live" },
-              ]}
-              labelField="label"
-              valueField="value"
-              value={server}
-              onChange={(item) => setServer(item.value)}
-              placeholder="Select server"
-              placeholderStyle={{ color: colors.textMuted }}
-              selectedTextStyle={{ color: colors.textPrimary }}
-              renderRightIcon={() => (
-                <MaterialCommunityIcons
-                  name="chevron-down"
-                  size={20}
-                  color={colors.textMuted}
-                />
-              )}
-            />
-          </View>
-
-          {/* Save Password */}
+        {/* ---------- Account Actions ---------- */}
+        <View style={styles.actionBox}>
+          {/* Demo Account */}
           <TouchableOpacity
-            style={styles.saveRow}
-            onPress={() => setSavePassword(!savePassword)}
+            style={styles.actionRow}
+            activeOpacity={0.7}
+            onPress={() => router.push("/broker/register")}
           >
-            <Text style={styles.saveText}>Save password</Text>
-            <View
-              style={[
-                styles.checkbox,
-                { backgroundColor: savePassword ? colors.primary : "#fff" },
-              ]}
-            >
-              {savePassword && (
-                <MaterialCommunityIcons name="check" size={16} color="#fff" />
-              )}
+            <MaterialCommunityIcons
+              name="school-outline"
+              size={26}
+              color={colors.textMuted}
+            />
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={styles.actionTitle}>Open a demo account</Text>
+              <Text style={styles.actionSubtitle}>
+                To learn trading and test strategies
+              </Text>
             </View>
+            <MaterialCommunityIcons
+              name="chevron-right"
+              size={22}
+              color={colors.textMuted}
+            />
           </TouchableOpacity>
 
-          {/* Forgot Password */}
-          <TouchableOpacity>
-            <Text style={styles.forgot}>Forgot password?</Text>
-          </TouchableOpacity>
+          <View style={styles.divider} />
 
-          {/* Login Button */}
-          <TouchableOpacity style={styles.loginButton}>
-            <Text style={styles.loginText}>LOGIN</Text>
+          {/* Real Account */}
+          <TouchableOpacity style={styles.actionRow} activeOpacity={0.7}>
+            <MaterialCommunityIcons
+              name="trending-up"
+              size={26}
+              color={colors.primary}
+            />
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={styles.actionTitle}>Open a real account</Text>
+              <Text style={styles.actionSubtitle}>
+                Identification required for live trading
+              </Text>
+            </View>
+            <MaterialCommunityIcons
+              name="chevron-right"
+              size={22}
+              color={colors.textMuted}
+            />
           </TouchableOpacity>
-        </ScrollView>
-      </SafeAreaView>
+        </View>
+
+        {/* ---------- Login Section ---------- */}
+        <Text style={styles.sectionTitle}>Login to an existing account</Text>
+
+        {/* Login Input */}
+        <View style={styles.inputContainer}>
+          <TextInput
+            placeholder="Login"
+            placeholderTextColor={colors.textMuted}
+            value={login}
+            onChangeText={setLogin}
+            style={styles.input}
+          />
+        </View>
+
+        {/* Password Input */}
+        <View style={styles.inputContainer}>
+          <TextInput
+            placeholder="Password"
+            placeholderTextColor={colors.textMuted}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            style={styles.input}
+          />
+        </View>
+
+        {/* Server Dropdown */}
+        <View style={styles.dropdownContainer}>
+          <Text style={styles.serverLabel}>Server</Text>
+          <Dropdown
+            style={styles.dropdown}
+            containerStyle={styles.dropdownBox}
+            data={[
+              { label: "Trade", value: "trade" },
+              { label: "Demo", value: "demo" },
+              { label: "Live", value: "live" },
+            ]}
+            labelField="label"
+            valueField="value"
+            value={server}
+            onChange={(item) => setServer(item.value)}
+            placeholder="Select server"
+            placeholderStyle={{ color: colors.textMuted }}
+            selectedTextStyle={{ color: colors.textPrimary }}
+            renderRightIcon={() => (
+              <MaterialCommunityIcons
+                name="chevron-down"
+                size={20}
+                color={colors.textMuted}
+              />
+            )}
+          />
+        </View>
+
+        {/* Save Password */}
+        <TouchableOpacity
+          style={styles.saveRow}
+          onPress={() => setSavePassword(!savePassword)}
+        >
+          <Text style={styles.saveText}>Save password</Text>
+          <View
+            style={[
+              styles.checkbox,
+              { backgroundColor: savePassword ? colors.primary : "#fff" },
+            ]}
+          >
+            {savePassword && (
+              <MaterialCommunityIcons name="check" size={16} color="#fff" />
+            )}
+          </View>
+        </TouchableOpacity>
+
+        {/* Forgot Password */}
+        <TouchableOpacity>
+          <Text style={styles.forgot}>Forgot password?</Text>
+        </TouchableOpacity>
+
+        {/* Login Button */}
+        <TouchableOpacity style={styles.loginButton}>
+          <Text style={styles.loginText}>LOGIN</Text>
+        </TouchableOpacity>
+      </ScrollView>
     </ScreenWrapper>
   );
 }

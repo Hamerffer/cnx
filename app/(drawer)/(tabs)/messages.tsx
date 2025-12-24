@@ -29,7 +29,7 @@ const Messages = () => {
 
           <Button
             style={styles.signupBtn}
-            onPress={() => console.log("Signup")}
+            onPress={() => router.push("/auth/register")}
           >
             <Text style={styles.btnText}>Sign Up</Text>
           </Button>

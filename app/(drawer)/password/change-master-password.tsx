@@ -11,10 +11,11 @@ import {
   View,
 } from "react-native";
 import { Appbar } from "react-native-paper";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 import Button from "@/components/button";
+import ScreenWrapper from "@/components/screen-Wrapper";
 import { colors, radius, spacingX, spacingY } from "@/constants/theme";
+import AppHeader from "@/components/back-chevron";
 
 /* ---------- password strength helper ---------- */
 const getPasswordStrength = (password: string) => {
@@ -34,19 +35,9 @@ export default function ChangeMasterPassword() {
   const strength = useMemo(() => getPasswordStrength(password), [password]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <ScreenWrapper>
       {/* ---------- Header ---------- */}
-      <Appbar.Header style={styles.appbar} elevated={false}>
-        <Appbar.Action
-          icon="arrow-left"
-          iconColor={colors.textPrimary}
-          onPress={router.back}
-        />
-        <Appbar.Content
-          title="Change master password"
-          titleStyle={styles.appbarTitle}
-        />
-      </Appbar.Header>
+     <AppHeader title="Change master password" />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -115,7 +106,7 @@ export default function ChangeMasterPassword() {
           </Button>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </ScreenWrapper>
   );
 }
 

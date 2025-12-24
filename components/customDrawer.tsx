@@ -61,18 +61,13 @@ export default function CustomDrawer(props: any) {
       {/* MENU ITEMS */}
       <Item icon="trending-up" label="Trade" route="/(drawer)/(tabs)/quotes" />
       <Item icon="newspaper-outline" label="Broker" route="/broker" />
-      <Item icon="mail-outline" label="Mailbox" badge={8} />
-      <Item icon="document-text-outline" label="Journal" />
-      <Item icon="settings-outline" label="Settings" route="/settings" />
-      <Item
-        icon="calendar-outline"
-        label="Change Master Password"
-        route="/(drawer)/password/change-master-password"
-      />
-      <Item icon="people-outline" label="Traders Community" />
-      <Item icon="code-slash-outline" label="MQL5 Algo Trading" />
+
       <Item icon="help-circle-outline" label="User guide" />
-      <Item icon="information-circle-outline" label="About" />
+      <Item
+        icon="information-circle-outline"
+        label="About"
+        route={"/(drawer)/about"}
+      />
     </DrawerContentScrollView>
   );
 }

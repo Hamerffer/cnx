@@ -1,5 +1,6 @@
 import AppHeader from "@/components/back-chevron";
 import ScreenWrapper from "@/components/screen-Wrapper";
+import { colors } from "@/constants/theme";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
@@ -47,9 +48,10 @@ export default function OpenDemoAccountScreen() {
 
   return (
     <ScreenWrapper>
+       <AppHeader title="Open a demo account" />
       <ScrollView style={styles.container}>
         {/* <Text style={styles.header}>Open a demo account</Text> */}
-        <AppHeader title="Open a demo account" />
+       
         <Text style={styles.subHeader}>Personal information</Text>
 
         {/* PERSONAL INFO */}
@@ -182,7 +184,7 @@ function Row({ children }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: colors.background,
     padding: 16,
   },
   header: {

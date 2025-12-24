@@ -2,7 +2,7 @@ import ScreenWrapper from "@/components/screen-Wrapper";
 import { colors, spacingX, spacingY } from "@/constants/theme";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { router, Tabs, useNavigation } from "expo-router";
-import { ChartCandlestick } from "lucide-react-native";
+import { Calendar, ChartCandlestick } from "lucide-react-native";
 import { Alert, Text, TouchableOpacity, View } from "react-native";
 
 import MoreMenu from "@/components/custom-menu";
@@ -83,7 +83,10 @@ export default function TabLayout() {
 
                 {/* Right: + and Message icons */}
                 <View style={{ flexDirection: "row", gap: spacingX._12 }}>
-                  <TouchableOpacity style={{ padding: spacingX._5 }}>
+                  <TouchableOpacity
+                    style={{ padding: spacingX._5 }}
+                    onPress={() => router.push("/add-symbol")}
+                  >
                     <FontAwesome name="plus" size={22} color={colors.white} />
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -288,16 +291,24 @@ export default function TabLayout() {
 
                 {/* Right: + and Message icons */}
                 <View style={{ flexDirection: "row", gap: spacingX._12 }}>
-                  <TouchableOpacity style={{ padding: spacingX._5 }}>
+                  {/* <TouchableOpacity style={{ padding: spacingX._5 }}>
                     <FontAwesome name="plus" size={22} color={colors.white} />
-                  </TouchableOpacity>
-                  <TouchableOpacity style={{ padding: spacingX._5 }}>
-                    <FontAwesome
-                      name="comments"
-                      size={22}
-                      color={colors.white}
-                    />
-                  </TouchableOpacity>
+                  </TouchableOpacity> */}
+                  <MoreMenu
+                    icon={<Calendar size={22} color={colors.white} />}
+                    items={[
+                      { key: "Today", onPress: () => console.log("Today") },
+                      {
+                        key: "Last Week",
+                        onPress: () => console.log("Last Week"),
+                      },
+                      { divider: true },
+                      {
+                        key: "Last Month",
+                        onPress: () => console.log("Last Month"),
+                      },
+                    ]}
+                  />
                 </View>
               </View>
             ),
@@ -409,7 +420,7 @@ export default function TabLayout() {
                       fontWeight: "bold",
                     }}
                   >
-                    Charts
+                    Accounts
                   </Text>
                 </View>
 

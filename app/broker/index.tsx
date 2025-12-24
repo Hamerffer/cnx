@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
   FlatList,
@@ -9,10 +10,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
 
 import AppHeader from "@/components/back-chevron";
+import ScreenWrapper from "@/components/screen-Wrapper";
 import { colors } from "@/constants/theme";
 
 /* -------------------- Dummy Broker Data -------------------- */
@@ -30,8 +30,7 @@ export default function BrokerSearchScreen() {
     const q = query.toLowerCase();
     return BROKERS.filter(
       (b) =>
-        b.name.toLowerCase().includes(q) ||
-        b.subtitle.toLowerCase().includes(q)
+        b.name.toLowerCase().includes(q) || b.subtitle.toLowerCase().includes(q)
     );
   }, [query]);
 
@@ -57,18 +56,15 @@ export default function BrokerSearchScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <ScreenWrapper>
       <AppHeader title="Brokers" />
 
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "padding"}
-      >
+      <View style={styles.container}>
         {/* ---------- Search ---------- */}
         <View style={styles.searchContainer}>
           <TextInput
             style={styles.searchInput}
-            placeholder="Find broker"
+            placeholder="Find broker Type F For Demo"
             placeholderTextColor={colors.textMuted}
             value={query}
             onChangeText={setQuery}
@@ -84,9 +80,7 @@ export default function BrokerSearchScreen() {
         {/* ---------- Content ---------- */}
         {query.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>
-              Use search to find a company
-            </Text>
+            <Text style={styles.emptyTitle}>Use search to find a company</Text>
             <Text style={styles.emptyDescription}>
               The application may feature brokerage companies which may not be
               regulated in your country. Exercise caution before opening an
@@ -106,13 +100,16 @@ export default function BrokerSearchScreen() {
         )}
 
         {/* ---------- Bottom CTA ---------- */}
-        <TouchableOpacity style={styles.bottomButton} activeOpacity={0.8}>
-          <Text style={styles.bottomButtonText}>
-            CAN’T FIND YOUR BROKER?
-          </Text>
-        </TouchableOpacity>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        <KeyboardAvoidingView
+          style={styles.keyboardAvoidingWrapper}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
+          <TouchableOpacity style={styles.bottomButton} activeOpacity={0.8}>
+            <Text style={styles.bottomButtonText}>CAN’T FIND YOUR BROKER?</Text>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
+      </View>
+    </ScreenWrapper>
   );
 }
 
@@ -120,8 +117,8 @@ export default function BrokerSearchScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.surface,
-    paddingHorizontal: 16,
+    backgroundColor: colors.background,
+    paddingHorizontal: 10,
   },
 
   /* Search */
@@ -236,5 +233,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     letterSpacing: 0.5,
+  },
+
+  /* Keyboard Avoiding Wrapper */
+  keyboardAvoidingWrapper: {
+    justifyContent: "flex-end",
   },
 });

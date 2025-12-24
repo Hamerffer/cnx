@@ -15,6 +15,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import Button from "@/components/button";
 import { colors, radius, spacingX, spacingY } from "@/constants/theme";
+import { A } from "@expo/html-elements";
+import AppHeader from "@/components/back-chevron";
 
 /* ---------- password strength helper ---------- */
 const getPasswordStrength = (password: string) => {
@@ -36,17 +38,7 @@ export default function ChangeInvestorPassword() {
   return (
     <SafeAreaView style={styles.container}>
       {/* ---------- Header ---------- */}
-      <Appbar.Header style={styles.appbar} elevated={false}>
-        <Appbar.Action
-          icon="arrow-left"
-          iconColor={colors.textPrimary}
-          onPress={router.back}
-        />
-        <Appbar.Content
-          title="Change master password"
-          titleStyle={styles.appbarTitle}
-        />
-      </Appbar.Header>
+      <AppHeader title="Change Investor password" />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}

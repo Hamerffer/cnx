@@ -1,216 +1,193 @@
 import ScreenWrapper from "@/components/screen-Wrapper";
-import { Box } from "@/components/ui/box"; // Gluestack's universal container
-import { Button, ButtonText } from "@/components/ui/button";
+import { colors } from "@/constants/theme";
+import { router } from "expo-router";
+import React, { useState } from "react";
 import {
-  FormControl,
-  FormControlError,
-  FormControlErrorIcon,
-  FormControlErrorText,
-  FormControlHelper,
-  FormControlHelperText,
-  FormControlLabel,
-  FormControlLabelText,
-} from "@/components/ui/form-control";
-import { AlertCircleIcon } from "@/components/ui/icon";
-import { Input, InputField } from "@/components/ui/input";
-import { Text } from "@/components/ui/text";
-import { VStack } from "@/components/ui/vstack";
-import { colors } from "@/constants/theme"; // Import your custom colors
-import React from "react";
-import { ActivityIndicator, StyleSheet } from "react-native";
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
-// Define your component
-function LoginForm() {
-  const [email, setEmail] = React.useState("");
-  const [password, setPassword] = React.useState("");
-  const [emailError, setEmailError] = React.useState("");
-  const [passwordError, setPasswordError] = React.useState("");
-  const [isLoading, setIsLoading] = React.useState(false);
+export default function LoginForm() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  // Simple validation logic
-  const validateForm = () => {
-    let isValid = true;
-
-    // Reset errors before validation
+  const validate = () => {
+    let valid = true;
     setEmailError("");
     setPasswordError("");
 
-    // 1. Email Validation
-    if (!email.includes("@") || email.length < 5) {
-      setEmailError("Please enter a valid email address.");
-      isValid = false;
+    if (!email.includes("@")) {
+      setEmailError("Please enter a valid email address");
+      valid = false;
     }
 
-    // 2. Password Validation
     if (password.length < 6) {
-      setPasswordError("Password must be at least 6 characters.");
-      isValid = false;
+      setPasswordError("Password must be at least 6 characters");
+      valid = false;
     }
 
-    return isValid;
+    return valid;
   };
 
-  const handleSubmit = () => {
-    if (validateForm()) {
-      setIsLoading(true);
-      console.log("Submitting form with:", { email, password });
+  const handleLogin = () => {
+    if (!validate()) return;
 
-      // --- Simulation of API Call ---
-      setTimeout(() => {
-        setIsLoading(false);
-        alert("Login Successful!"); // Replace with actual navigation/state change
-      }, 1500);
-      // -------------------------------
-    } else {
-      console.log("Form has errors. Not submitting.");
-    }
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      alert("Login Successful");
+    }, 1500);
   };
 
   return (
-    // ScreenWrapper should ideally manage the app's background color
-    <ScreenWrapper >
-      <Box style={styles.container} >
-        {/* Header Text: Uses your primary brand color */}
-        <Text style={styles.header}>Welcome Back</Text>
+    <ScreenWrapper>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : "padding"}
+      >
+        <View style={styles.container}>
+          <Text style={styles.title}>Welcome Back</Text>
 
-        <VStack space="xl" style={styles.container}>
-          {/* --- 1. Email Field --- */}
-          <FormControl isInvalid={!!emailError} size="md" isRequired={true}>
-            <FormControlLabel>
-              {/* Label Text: Uses textSecondary color */}
-              <FormControlLabelText
-                style={{ color: colors.textSecondary, marginBottom: 4 }}
-              >
-                Email
-              </FormControlLabelText>
-            </FormControlLabel>
-            {/* Input: Set background, border, and text color for dark mode */}
-            <Input size="md" style={styles.inputContainer}>
-              <InputField
-                placeholder="Enter your email"
-                placeholderTextColor={colors.textMuted}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                value={email}
-                onChangeText={setEmail}
-                onSubmitEditing={handleSubmit}
-                style={{ color: colors.textPrimary }} // Input text color
-              />
-            </Input>
-            {/* Error Message: Uses your negative/sell color for destructive messaging */}
-            {!!emailError && (
-              <FormControlError>
-                <FormControlErrorIcon
-                  as={AlertCircleIcon}
-                  style={{ color: colors.negative }}
-                />
-                <FormControlErrorText style={{ color: colors.negative }}>
-                  {emailError}
-                </FormControlErrorText>
-              </FormControlError>
-            )}
-          </FormControl>
+          {/* Email */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter your email"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail}
+            />
+            {!!emailError && <Text style={styles.errorText}>{emailError}</Text>}
+          </View>
 
-          {/* --- 2. Password Field --- */}
-          <FormControl isInvalid={!!passwordError} size="md" isRequired={true}>
-            <FormControlLabel>
-              {/* Label Text: Uses textSecondary color */}
-              <FormControlLabelText
-                style={{ color: colors.textSecondary, marginBottom: 4 }}
-              >
-                Password
-              </FormControlLabelText>
-            </FormControlLabel>
-            <Input size="md" style={styles.inputContainer}>
-              <InputField
-                type="password"
-                placeholder="Enter your password"
-                placeholderTextColor={colors.textMuted}
-                value={password}
-                onChangeText={setPassword}
-                onSubmitEditing={handleSubmit}
-                style={{ color: colors.textPrimary }} // Input text color
-              />
-            </Input>
-            {/* Helper Text: Uses textMuted color */}
-            {!passwordError && (
-              <FormControlHelper>
-                <FormControlHelperText style={{ color: colors.textMuted }}>
-                  Minimum 6 characters required.
-                </FormControlHelperText>
-              </FormControlHelper>
+          {/* Password */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Password</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter your password"
+              placeholderTextColor={colors.textMuted}
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+            />
+            {!!passwordError ? (
+              <Text style={styles.errorText}>{passwordError}</Text>
+            ) : (
+              <Text style={styles.helperText}>
+                Minimum 6 characters required
+              </Text>
             )}
-            {/* Error Message: Uses your negative/sell color */}
-            {!!passwordError && (
-              <FormControlError>
-                <FormControlErrorIcon
-                  as={AlertCircleIcon}
-                  style={{ color: colors.negative }}
-                />
-                <FormControlErrorText style={{ color: colors.negative }}>
-                  {passwordError}
-                </FormControlErrorText>
-              </FormControlError>
-            )}
-          </FormControl>
+          </View>
 
-          {/* --- 3. Submit Button --- */}
-          {/* Button: Use your primary color for the solid variant background */}
-          <Button
-            size="md"
-            variant="solid"
-            onPress={handleSubmit}
-            isDisabled={isLoading}
-            style={[styles.button, { backgroundColor: colors.primary }]}
+          {/* Login Button */}
+          <TouchableOpacity
+            style={[styles.button, loading && { opacity: 0.7 }]}
+            onPress={handleLogin}
+            disabled={loading}
           >
-            {isLoading ? (
-              // Use ActivityIndicator with white color over the dark button
+            {loading ? (
               <ActivityIndicator color={colors.white} />
             ) : (
-              // Button Text: Use white for text over the primary button color
-              <ButtonText style={{ color: colors.white }}>Log In</ButtonText>
+              <Text style={styles.buttonText}>Log In</Text>
             )}
-          </Button>
+          </TouchableOpacity>
 
-          {/* --- 4. Forgot Password Link --- */}
-          <Button variant="link" size="sm" style={styles.forgotPasswordButton}>
-            <ButtonText style={{ color: colors.textSecondary }}>
-              Forgot Password?
-            </ButtonText>
-          </Button>
-        </VStack>
-      </Box>
+          {/* Forgot Password */}
+          <TouchableOpacity style={styles.forgotBtn} onPress={()=> router.push("/auth/forgot-password")}>
+            <Text style={styles.forgotText}>Forgot Password?</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </ScreenWrapper>
   );
 }
-
 const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
+
   container: {
+    flex: 1,
     width: "100%",
-    maxWidth: 400,
     padding: 20,
-    marginVertical: "auto",
-    // Note: The Box background will likely inherit from ScreenWrapper,
-    // which should be set to colors.background or colors.surface.
+    justifyContent: "center",
   },
-  header: {
+
+  title: {
     fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 40,
+    fontWeight: "700",
     textAlign: "center",
-    color: colors.primary, // Using your brand's primary color
+    color: colors.primary,
+    marginBottom: 40,
   },
-  inputContainer: {
-    backgroundColor: colors.surface, // Use a dark surface color for the input field background
-    borderColor: colors.border, // Use your border color
+
+  field: {
+    marginBottom: 20,
   },
+
+  label: {
+    color: colors.textSecondary,
+    marginBottom: 6,
+    fontSize: 14,
+  },
+
+  input: {
+    height: 48,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    color: colors.textPrimary,
+  },
+
+  helperText: {
+    marginTop: 6,
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+
+  errorText: {
+    marginTop: 6,
+    fontSize: 12,
+    color: colors.negative,
+  },
+
   button: {
-    marginTop: 20,
-  },
-  forgotPasswordButton: {
-    alignSelf: "center",
+    height: 48,
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
     marginTop: 10,
   },
-});
 
-export default LoginForm;
+  buttonText: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+
+  forgotBtn: {
+    marginTop: 16,
+    alignItems: "center",
+  },
+
+  forgotText: {
+    color: colors.textSecondary,
+    fontSize: 14,
+  },
+});

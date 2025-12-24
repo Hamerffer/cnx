@@ -1,5 +1,5 @@
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import React from "react";
+import React, { useCallback, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 
 import ScreenWrapper from "@/components/screen-Wrapper";
@@ -13,33 +13,76 @@ type SymbolItem = {
   lot: string;
 };
 
-const DATA: SymbolItem[] = [
-  {
-    id: "1",
-    name: "SILVER",
-    lot: "1 Lot = 5000 Troy Oz",
-  },
-  {
-    id: "2",
-    name: "GOLD",
-    lot: "1 Lot = 100 Troy Oz",
-  },
+const INITIAL_DATA: SymbolItem[] = [
+  { id: "1", name: "SILVER", lot: "1 Lot = 5000 Troy Oz" },
+  { id: "2", name: "GOLD", lot: "1 Lot = 100 Troy Oz" },
 ];
 
 export default function SelectedSymbolsScreen() {
-  const renderItem = ({ item }: { item: SymbolItem }) => (
-    <View style={styles.row}>
-      <View>
-        <Text style={styles.symbol}>{item.name}</Text>
-        <Text style={styles.lot}>{item.lot}</Text>
-      </View>
+  const [data, setData] = useState(INITIAL_DATA);
+  const [deleteMode, setDeleteMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-      <MaterialIcons
-        name="drag-handle"
-        size={scale(22)}
-        color={colors.textMuted}
-      />
-    </View>
+  /* ---------------- ACTIONS ---------------- */
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      // eslint-disable-next-line no-unused-expressions
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const onTrashPress = () => {
+    if (!deleteMode) {
+      setDeleteMode(true);
+      return;
+    }
+
+    // Delete selected
+    if (selectedIds.size > 0) {
+      setData((prev) => prev.filter((i) => !selectedIds.has(i.id)));
+    }
+
+    // Reset
+    setSelectedIds(new Set());
+    setDeleteMode(false);
+  };
+
+  /* ---------------- RENDER ITEM ---------------- */
+
+  const renderItem = useCallback(
+    ({ item }: { item: SymbolItem }) => {
+      const selected = selectedIds.has(item.id);
+
+      return (
+        <Pressable
+          onPress={() => deleteMode && toggleSelect(item.id)}
+          style={styles.row}
+        >
+          <View>
+            <Text style={styles.symbol}>{item.name}</Text>
+            <Text style={styles.lot}>{item.lot}</Text>
+          </View>
+
+          {deleteMode ? (
+            <Ionicons
+              name={selected ? "radio-button-on" : "radio-button-off"}
+              size={scale(22)}
+              color={selected ? colors.primary : colors.textMuted}
+            />
+          ) : (
+            <MaterialIcons
+              name="drag-handle"
+              size={scale(22)}
+              color={colors.textMuted}
+            />
+          )}
+        </Pressable>
+      );
+    },
+    [deleteMode, selectedIds]
   );
 
   return (
@@ -61,11 +104,15 @@ export default function SelectedSymbolsScreen() {
             <Ionicons name="add" size={scale(20)} color={colors.textPrimary} />
           </Pressable>
 
-          <Pressable style={styles.iconBtn}>
+          <Pressable style={styles.iconBtn} onPress={onTrashPress}>
             <Ionicons
-              name="trash-outline"
+              name={deleteMode ? "trash" : "trash-outline"}
               size={scale(20)}
-              color={colors.textPrimary}
+              color={
+                deleteMode && selectedIds.size > 0
+                  ? colors.negative
+                  : colors.textPrimary
+              }
             />
           </Pressable>
         </View>
@@ -73,7 +120,7 @@ export default function SelectedSymbolsScreen() {
 
       {/* LIST */}
       <FlatList
-        data={DATA}
+        data={data}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         ItemSeparatorComponent={() => <View style={styles.divider} />}

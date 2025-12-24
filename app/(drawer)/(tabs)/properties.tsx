@@ -8,9 +8,9 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 export default function Properties() {
   return (
     <ScreenWrapper>
-      <View style={{ paddingHorizontal: spacingX._15 }}>
-        <AppHeader title="Properties" />
-      </View>
+      {/* <View style={{ paddingHorizontal: spacingX._15 }}> */}
+      <AppHeader title="Properties" />
+      {/* </View> */}
       <ScrollView contentContainerStyle={styles.container}>
         {/* PROPERTIES */}
         <Section title="PROPERTIES">
