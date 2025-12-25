@@ -26,7 +26,7 @@ const Welcome = () => {
           </Text>
 
           <Text style={styles.subtitle}>
-            All markets. One powerful platform.
+            All markets One powerful platform.
           </Text>
         </View>
 
