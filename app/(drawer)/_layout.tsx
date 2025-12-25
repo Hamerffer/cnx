@@ -2,7 +2,6 @@ import CustomDrawer from "@/components/customDrawer";
 import { Drawer } from "expo-router/drawer";
 
 function Layout() {
-  
   return (
     <Drawer
       drawerContent={(props) => <CustomDrawer {...props} />}
