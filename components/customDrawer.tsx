@@ -2,25 +2,57 @@ import { colors, spacingX, spacingY } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { DrawerContentScrollView } from "@react-navigation/drawer";
 import { Href, useRouter } from "expo-router";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+
+import { useAuth } from "@/context/AuthContext";
+import { useUser } from "@/context/user-context";
+import { logoutApi } from "@/services/auth.service";
+import { clearUser } from "@/services/db";
 
 export default function CustomDrawer(props: any) {
   const router = useRouter();
+  const { setAuthToken } = useAuth();
+  const { user } = useUser();
+  const handleLogout = async () => {
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await logoutApi();
+          } catch (e) {}
+
+          await setAuthToken(null);
+
+          await clearUser();
+
+          router.replace("/");
+        },
+      },
+    ]);
+  };
 
   const Item = ({
     icon,
     label,
     route,
     badge,
+    onPress,
   }: {
     icon: any;
     label: string;
     route?: Href;
     badge?: number;
+    onPress?: () => void;
   }) => (
     <TouchableOpacity
       style={styles.item}
-      onPress={() => route && router.push(route as any)}
+      onPress={() => {
+        if (onPress) onPress();
+        else if (route) router.push(route as any);
+      }}
     >
       <Ionicons name={icon} size={22} color={colors.white} />
       <Text style={styles.itemText}>{label}</Text>
@@ -38,14 +70,15 @@ export default function CustomDrawer(props: any) {
       {...props}
       contentContainerStyle={styles.container}
     >
-      {/* TOP ACCOUNT SECTION */}
+      {/* HEADER */}
       <View style={styles.header}>
-        <Text style={styles.name}>Xyz Xyz</Text>
-        <Text style={styles.account}>4579899 - NCMGlobal-Demo</Text>
+        <Text style={styles.name}>{user?.name}</Text>
+        <Text style={styles.account}>{user?.serverName}</Text>
 
         <View style={styles.demoTag}>
           <Text style={styles.demoText}>DEMO</Text>
         </View>
+
         <TouchableOpacity>
           <Text
             style={styles.manage}
@@ -58,16 +91,15 @@ export default function CustomDrawer(props: any) {
 
       <View style={styles.divider} />
 
-      {/* MENU ITEMS */}
+      {/* MENU */}
       <Item icon="trending-up" label="Trade" route="/(drawer)/(tabs)/quotes" />
-      <Item icon="newspaper-outline" label="Broker" route="/broker" />
+      {/* <Item icon="newspaper-outline" label="Broker" route="/broker" /> */}
+      <Item icon="information-circle-outline" label="About" route="/about" />
 
-      <Item icon="help-circle-outline" label="User guide" />
-      <Item
-        icon="information-circle-outline"
-        label="About"
-        route={"/(drawer)/about"}
-      />
+      <View style={styles.divider} />
+
+      {/* LOGOUT */}
+      <Item icon="log-out-outline" label="Logout" onPress={handleLogout} />
     </DrawerContentScrollView>
   );
 }

@@ -1,14 +1,18 @@
 import Button from "@/components/button";
-import OpenDemoModal from "@/components/modals/open-demo-modals";
 import ScreenWrapper from "@/components/screen-Wrapper";
 import { colors } from "@/constants/theme";
+import { useAuth } from "@/context/AuthContext";
 import { scale, verticalScale } from "@/utils/styling";
-import { router } from "expo-router";
-import React, { useState } from "react";
+import { Redirect, router } from "expo-router";
+import React from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 
 const Welcome = () => {
-  const [showModal, setShowModal] = useState(true);
+  const { token } = useAuth();
+  // const [showModal, setShowModal] = useState(true);
+  if (token) {
+    return <Redirect href="/(drawer)/(tabs)/quotes" />;
+  }
   return (
     <ScreenWrapper showPattern bgOpacity={0.9}>
       <View style={styles.container}>
@@ -30,14 +34,11 @@ const Welcome = () => {
           </Text>
         </View>
 
-        <Button
-          style={styles.button}
-          onPress={() => router.replace("/(drawer)/(tabs)/quotes")}
-        >
+        <Button style={styles.button} onPress={() => router.replace("/broker")}>
           <Text style={styles.btnText}>Get started</Text>
         </Button>
       </View>
-      <OpenDemoModal visible={showModal} onClose={() => setShowModal(false)} />
+      {/* <OpenDemoModal visible={showModal} onClose={() => setShowModal(false)} /> */}
     </ScreenWrapper>
   );
 };

@@ -1,29 +1,62 @@
-// import React, { useState } from "react";
+import React, { useState } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import * as Network from "expo-network";
 
 import QuoteModal from "@/components/modals/quote-modal";
 import { colors, spacingX, spacingY } from "@/constants/theme";
-import { QuoteItem, quotesData } from "@/data/quotes";
-import { useState } from "react";
+import { getQuotesApi } from "@/services/quotes.service";
+import { normalizeQuotes, QuoteItem } from "@/utils/normalize-quotes";
+import { useQuery } from "@tanstack/react-query";
 
 const QuotesScreen = () => {
   const [visible, setVisible] = useState(false);
-  const [symbol, seSymbol] = useState("");
+  const [symbol, setSymbol] = useState("");
+  const [page] = useState(1);
+
+  /* ================= FETCH QUOTES ================= */
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["quotes", page],
+    queryFn: async () => {
+      const res: any = await getQuotesApi({ page });
+      return normalizeQuotes(res.json.items);
+    },
+    refetchInterval: 1500,
+  });
+
+  if (isLoading) {
+    return (
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <View style={styles.loader}>
+        <Text style={{ color: colors.negative }}>Failed to load quotes</Text>
+      </View>
+    );
+  }
+
+  /* ================= RENDER ITEM ================= */
   const renderItem = ({ item }: { item: QuoteItem }) => {
-    const isPositive = item.change.startsWith("+");
+    const isPositive = Number(item.change) >= 0;
 
     return (
       <TouchableOpacity
         style={styles.row}
         activeOpacity={0.85}
         onPress={() => {
-          seSymbol(item.symbol), setVisible(true);
+          setSymbol(item.symbol);
+          setVisible(true);
         }}
       >
         {/* ================= LEFT ================= */}
@@ -34,49 +67,24 @@ const QuotesScreen = () => {
               isPositive ? styles.positive : styles.negative,
             ]}
           >
-            {item.change} {item.changePercent}
+            {item.change} ({item.changePercent}%)
           </Text>
 
           <Text style={styles.symbol}>{item.symbol}</Text>
-
-          <View style={styles.timeRow}>
-            <Text style={styles.time}>{item.time}</Text>
-
-            {!!item.arrow && (
-              <View style={styles.tickRow}>
-                <Text style={styles.tickArrow}>{item.arrow}</Text>
-                <Text style={styles.tickCount}>{item.arrowCount}</Text>
-              </View>
-            )}
-          </View>
         </View>
 
         {/* ================= RIGHT ================= */}
         <View style={styles.right}>
-          {/* BID */}
-          <View style={styles.priceLine}>
-            <View style={styles.priceWrap}>
-              <Text style={styles.bid}>{item.bid}</Text>
-              <Text style={styles.sup}>{item.bidSup}</Text>
-            </View>
-
-            <View style={styles.hl}>
-              <Text style={styles.hlLabel}>L:</Text>
-              <Text style={styles.hlValue}>{item.low}</Text>
-            </View>
+          {/* BID / ASK */}
+          <View style={styles.priceRow}>
+            <Text style={styles.bid}>{item.bid}</Text>
+            <Text style={styles.ask}>{item.ask}</Text>
           </View>
 
-          {/* ASK */}
-          <View style={styles.priceLine}>
-            <View style={styles.priceWrap}>
-              <Text style={styles.ask}>{item.ask}</Text>
-              <Text style={styles.sup}>{item.askSup}</Text>
-            </View>
-
-            <View style={styles.hl}>
-              <Text style={styles.hlLabel}>H:</Text>
-              <Text style={styles.hlValue}>{item.high}</Text>
-            </View>
+          {/* LOW / HIGH */}
+          <View style={styles.hlRow}>
+            <Text style={styles.hlText}>L: {item.low}</Text>
+            <Text style={styles.hlText}>H: {item.high}</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -87,12 +95,13 @@ const QuotesScreen = () => {
     <>
       <View style={styles.container}>
         <FlatList
-          data={quotesData}
+          data={data}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
           showsVerticalScrollIndicator={false}
         />
       </View>
+
       <QuoteModal
         visible={visible}
         onClose={() => setVisible(false)}
@@ -103,9 +112,18 @@ const QuotesScreen = () => {
 };
 
 export default QuotesScreen;
+
+/* ================= STYLES ================= */
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.background,
+  },
+
+  loader: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: colors.background,
   },
 
@@ -113,8 +131,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     paddingVertical: spacingY._12,
     paddingHorizontal: spacingX._10,
-    borderBottomWidth: 0.6,
-    borderBottomColor: colors.border,
+    // borderBottomWidth: 0.6,
+    // borderBottomColor: colors.border,
   },
 
   /* LEFT */
@@ -140,89 +158,38 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     color: colors.textPrimary,
-    marginBottom: spacingY._5,
-  },
-
-  timeRow: {
-    flexDirection: "row",
-    // justifyContent: "space-",
-    alignItems: "center",
-    gap: spacingX._10,
-  },
-
-  time: {
-    fontSize: 11,
-    color: colors.textSecondary,
-  },
-
-  tickRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-  },
-
-  tickArrow: {
-    fontSize: 13,
-    color: colors.primaryLight,
-    marginRight: spacingX._3,
-  },
-
-  tickCount: {
-    fontSize: 11,
-    color: colors.textSecondary,
   },
 
   /* RIGHT */
   right: {
-    alignItems: "flex-end",
+    alignItems: "flex-end", // no fixed width → tight layout
   },
 
-  priceLine: {
+  priceRow: {
     flexDirection: "row",
-    alignItems: "center",
-    marginBottom: spacingY._10,
-  },
-
-  priceWrap: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    minWidth: 86,
-    justifyContent: "flex-end",
+    alignItems: "baseline",
+    gap: 10, // ✅ tighter BID–ASK gap
   },
 
   bid: {
-    fontSize: 21,
+    fontSize: 22,
     fontWeight: "600",
     color: colors.buy,
-    letterSpacing: 0.2,
   },
 
   ask: {
-    fontSize: 17,
+    fontSize: 22,
     fontWeight: "600",
     color: colors.sell,
-    letterSpacing: 0.2,
   },
 
-  sup: {
-    fontSize: 10,
-    color: colors.textSecondary,
-    marginTop: 2,
-    marginLeft: 1,
-  },
-
-  hl: {
+  hlRow: {
     flexDirection: "row",
-    minWidth: 65,
-    justifyContent: "flex-end",
+    gap: 12, // ✅ tighter L–H gap
+    marginTop: 2,
   },
 
-  hlLabel: {
-    fontSize: 11,
-    color: colors.textMuted,
-    marginRight: spacingX._3,
-  },
-
-  hlValue: {
+  hlText: {
     fontSize: 11,
     color: colors.textSecondary,
   },

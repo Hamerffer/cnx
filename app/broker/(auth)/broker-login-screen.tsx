@@ -2,9 +2,11 @@ import AppHeader from "@/components/back-chevron";
 import ScreenWrapper from "@/components/screen-Wrapper";
 import { colors } from "@/constants/theme";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
+import * as SecureStore from "expo-secure-store";
 import React, { useState } from "react";
 import {
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,28 +14,95 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { Dropdown } from "react-native-element-dropdown";
+
+import { useAuth } from "@/context/AuthContext";
+import { getSessionApi, loginApi } from "@/services/auth.service";
+import { getUser, saveUser } from "@/services/db";
+
 export default function BrokerLoginScreen() {
+  const { brokerId } = useLocalSearchParams<{ brokerId: string }>();
+  const { setAuthToken } = useAuth();
+
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
-  const [server, setServer] = useState("trade");
   const [savePassword, setSavePassword] = useState(true);
+  const [loading, setLoading] = useState(false);
+
+  /* ---------- LOGIN HANDLER ---------- */
+const handleLogin = async () => {
+  if (!login || !password) {
+    Alert.alert("Error", "Login and password are required");
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    // 1️⃣ LOGIN (TOKEN ONLY)
+    const loginRes: any = await loginApi({
+      brokerId,
+      loginId: login,
+      password,
+    });
+
+    const token = loginRes.json.token;
+    await setAuthToken(token);
+
+    // 2️⃣ FETCH FULL SESSION USER
+    const sessionRes: any = await getSessionApi();
+    const apiUser = sessionRes.json.user;
+
+    // 3️⃣ SAVE FULL USER TO SQLITE
+    await saveUser({
+      id: apiUser.id,
+      name: apiUser.name,
+      email: apiUser.email,
+      login: apiUser.login,
+      brokerId: apiUser.brokerId,
+
+      serverId: apiUser.server?.id ?? null,
+      serverName: apiUser.server?.name ?? null,
+
+      accountTypeId: apiUser.accountType?.id ?? null,
+      accountTypeName: apiUser.accountType?.name ?? null,
+
+      balance: apiUser.balance,
+      role: JSON.stringify(apiUser.role),
+
+      updatedAt: apiUser.updatedAt,
+    });
+
+    const savedUser = await getUser();
+    console.log("📦 SQLITE USER 👉", savedUser);
+
+    router.replace("/(drawer)/(tabs)/quotes");
+  } catch (err: any) {
+    Alert.alert("Login Failed", err?.message || "Invalid credentials");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <ScreenWrapper>
-      
       <AppHeader title="Login" />
+
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         {/* ---------- Broker Title ---------- */}
         <Text style={styles.title}>F Trade Markets Ltd.</Text>
 
         {/* ---------- Account Actions ---------- */}
         <View style={styles.actionBox}>
-          {/* Demo Account */}
           <TouchableOpacity
             style={styles.actionRow}
             activeOpacity={0.7}
-            onPress={() => router.push("/broker/register")}
+            onPress={() =>
+              router.push({
+                pathname: "/broker/register",
+                params: { brokerId },
+              })
+            }
           >
             <MaterialCommunityIcons
               name="school-outline"
@@ -52,34 +121,11 @@ export default function BrokerLoginScreen() {
               color={colors.textMuted}
             />
           </TouchableOpacity>
-
-          <View style={styles.divider} />
-
-          {/* Real Account */}
-          <TouchableOpacity style={styles.actionRow} activeOpacity={0.7}>
-            <MaterialCommunityIcons
-              name="trending-up"
-              size={26}
-              color={colors.primary}
-            />
-            <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.actionTitle}>Open a real account</Text>
-              <Text style={styles.actionSubtitle}>
-                Identification required for live trading
-              </Text>
-            </View>
-            <MaterialCommunityIcons
-              name="chevron-right"
-              size={22}
-              color={colors.textMuted}
-            />
-          </TouchableOpacity>
         </View>
 
         {/* ---------- Login Section ---------- */}
         <Text style={styles.sectionTitle}>Login to an existing account</Text>
 
-        {/* Login Input */}
         <View style={styles.inputContainer}>
           <TextInput
             placeholder="Login"
@@ -87,10 +133,10 @@ export default function BrokerLoginScreen() {
             value={login}
             onChangeText={setLogin}
             style={styles.input}
+            autoCapitalize="none"
           />
         </View>
 
-        {/* Password Input */}
         <View style={styles.inputContainer}>
           <TextInput
             placeholder="Password"
@@ -99,34 +145,6 @@ export default function BrokerLoginScreen() {
             onChangeText={setPassword}
             secureTextEntry
             style={styles.input}
-          />
-        </View>
-
-        {/* Server Dropdown */}
-        <View style={styles.dropdownContainer}>
-          <Text style={styles.serverLabel}>Server</Text>
-          <Dropdown
-            style={styles.dropdown}
-            containerStyle={styles.dropdownBox}
-            data={[
-              { label: "Trade", value: "trade" },
-              { label: "Demo", value: "demo" },
-              { label: "Live", value: "live" },
-            ]}
-            labelField="label"
-            valueField="value"
-            value={server}
-            onChange={(item) => setServer(item.value)}
-            placeholder="Select server"
-            placeholderStyle={{ color: colors.textMuted }}
-            selectedTextStyle={{ color: colors.textPrimary }}
-            renderRightIcon={() => (
-              <MaterialCommunityIcons
-                name="chevron-down"
-                size={20}
-                color={colors.textMuted}
-              />
-            )}
           />
         </View>
 
@@ -148,14 +166,15 @@ export default function BrokerLoginScreen() {
           </View>
         </TouchableOpacity>
 
-        {/* Forgot Password */}
-        <TouchableOpacity>
-          <Text style={styles.forgot}>Forgot password?</Text>
-        </TouchableOpacity>
-
         {/* Login Button */}
-        <TouchableOpacity style={styles.loginButton}>
-          <Text style={styles.loginText}>LOGIN</Text>
+        <TouchableOpacity
+          style={[styles.loginButton, loading && { opacity: 0.6 }]}
+          disabled={loading}
+          onPress={handleLogin}
+        >
+          <Text style={styles.loginText}>
+            {loading ? "LOGGING IN..." : "LOGIN"}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </ScreenWrapper>
@@ -164,11 +183,6 @@ export default function BrokerLoginScreen() {
 
 /* ---------- Styles ---------- */
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-
   title: {
     fontSize: 22,
     fontWeight: "600",
@@ -200,12 +214,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  divider: {
-    height: 1,
-    backgroundColor: colors.divider,
-    marginHorizontal: 14,
-  },
-
   sectionTitle: {
     fontSize: 16,
     fontWeight: "600",
@@ -225,32 +233,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
-  dropdownContainer: {
-    marginBottom: 16,
-  },
-
-  serverLabel: {
-    color: colors.textMuted,
-    marginBottom: 6,
-  },
-
-  dropdown: {
-    height: 45,
-    borderWidth: 1,
-    borderColor: colors.divider,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-  },
-
-  dropdownBox: {
-    borderRadius: 8,
-  },
-
   saveRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 24,
   },
 
   saveText: {
@@ -266,13 +253,6 @@ const styles = StyleSheet.create({
     borderColor: colors.divider,
     justifyContent: "center",
     alignItems: "center",
-  },
-
-  forgot: {
-    color: colors.primary,
-    textAlign: "center",
-    marginBottom: 24,
-    fontWeight: "500",
   },
 
   loginButton: {

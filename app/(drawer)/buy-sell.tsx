@@ -16,6 +16,7 @@ import MoreMenu from "@/components/custom-menu";
 import ScreenWrapper from "@/components/screen-Wrapper";
 import { colors, radius, spacingX, spacingY } from "@/constants/theme";
 import { MaterialIcons } from "@expo/vector-icons";
+
 /* ================= SCREEN ================= */
 export default function TradeScreen() {
   const [volume, setVolume] = useState("0.01");

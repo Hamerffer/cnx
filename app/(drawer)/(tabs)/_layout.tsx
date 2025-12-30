@@ -6,6 +6,7 @@ import { Calendar, ChartCandlestick } from "lucide-react-native";
 import { Alert, Text, TouchableOpacity, View } from "react-native";
 
 import MoreMenu from "@/components/custom-menu";
+import { useTrade } from "@/context/trade-context";
 import { showAlert } from "@/utils/show-alert";
 import { DrawerActions } from "@react-navigation/native";
 // import { useState } from "react";
@@ -13,6 +14,7 @@ import { DrawerActions } from "@react-navigation/native";
 export default function TabLayout() {
   // const [menuVisible, setMenuVisible] = useState(false);
   // const insets = useSafeAreaInsets();
+  const { showTradeForm, setShowTradeForm } = useTrade();
   const navigation = useNavigation();
   return (
     <ScreenWrapper>
@@ -153,7 +155,12 @@ export default function TabLayout() {
                 {/* Right: + and Message icons */}
                 <View style={{ flexDirection: "row", gap: spacingX._12 }}>
                   <TouchableOpacity style={{ padding: spacingX._5 }}>
-                    <FontAwesome name="plus" size={22} color={colors.white} />
+                    <FontAwesome
+                      name="exchange"
+                      size={22}
+                      color={colors.white}
+                      onPress={() => setShowTradeForm(!showTradeForm)}
+                    />
                   </TouchableOpacity>
                   <TouchableOpacity style={{ padding: spacingX._5 }}>
                     <FontAwesome

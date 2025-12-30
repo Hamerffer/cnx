@@ -13,23 +13,16 @@ import {
   View,
 } from "react-native";
 
-type Props = {
-  name?: string;
-  company?: string;
-  accountNo?: string;
-  server?: string;
-  balance?: string;
-  isDemo?: boolean;
-};
+import { useUser } from "@/context/user-context";
 
-const AccountCard = ({
-  name = "Xyz Xyz",
-  company = "Arakkal Markets Limited",
-  accountNo = "423089",
-  server = "ArakkalMarkets-Server",
-  balance = "100 000.00",
-  isDemo = true,
-}: Props) => {
+const AccountCard = () => {
+  const { user } = useUser();
+
+  if (!user) return null;
+
+  const roles = JSON.parse(user.role || "[]");
+  const isDemo = roles.includes("demo");
+
   return (
     <ScreenWrapper>
       <View style={styles.container}>
@@ -50,21 +43,21 @@ const AccountCard = ({
         </View>
 
         {/* Account Name */}
-
-        <Text style={styles.name}>{name}</Text>
+        <Text style={styles.name}>{user.name}</Text>
 
         {/* Broker Name */}
         <TouchableOpacity onPress={() => router.push("/broker/broker-info")}>
-          <Text style={styles.company}>{company}</Text>
+          <Text style={styles.company}>Broker</Text>
         </TouchableOpacity>
+
         {/* Account + Server */}
         <Text style={styles.server}>
-          {accountNo} — {server}
+          {user.login} — {user.serverName}
         </Text>
         <Text style={styles.access}>Access point</Text>
 
         {/* Balance */}
-        <Text style={styles.balance}>{balance} USD</Text>
+        <Text style={styles.balance}>{user.balance} USD</Text>
 
         {/* Footer Icons */}
         <View style={styles.footer}>
@@ -90,6 +83,7 @@ const AccountCard = ({
 };
 
 export default AccountCard;
+
 const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.surface,

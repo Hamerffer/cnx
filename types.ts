@@ -157,3 +157,10 @@ export type HistoryItem = {
   date: string;
   time: string;
 };
+export type TradeContextType = {
+  showTradeForm: boolean;
+  symbol: string;
+
+  setShowTradeForm: (value: boolean) => void;
+  setSymbol: (value: string) => void;
+};
