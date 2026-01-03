@@ -1,8 +1,15 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-import { clearUser, getUser, LocalUser } from "@/services/db";
+import { clearUser, getUser } from "@/db/queries/user";
+import { userTable } from "@/db/schema";
 
 /* ================= TYPES ================= */
+/**
+ * Infer user type directly from Drizzle schema
+ * This ALWAYS stays in sync with DB
+ */
+export type LocalUser = typeof userTable.$inferSelect;
+
 type UserContextType = {
   user: LocalUser | null;
   refreshUser: () => Promise<void>;
@@ -16,9 +23,9 @@ const UserContext = createContext<UserContextType | null>(null);
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<LocalUser | null>(null);
 
-  /* 🔄 LOAD USER FROM SQLITE ON APP START */
+  /* 🔄 LOAD USER FROM DB */
   const loadUser = async () => {
-    const storedUser = await getUser();
+    const storedUser = await getUser(); // LocalUser | null
     setUser(storedUser);
   };
 

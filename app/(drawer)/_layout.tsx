@@ -1,5 +1,6 @@
 import CustomDrawer from "@/components/customDrawer";
 import { Drawer } from "expo-router/drawer";
+import React from "react";
 
 function Layout() {
   return (

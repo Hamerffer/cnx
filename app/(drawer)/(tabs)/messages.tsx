@@ -1,11 +1,15 @@
 import Button from "@/components/button";
 import ScreenWrapper from "@/components/screen-Wrapper";
 import { colors, spacingY } from "@/constants/theme";
+import { userTable } from "@/db/schema";
+import { useDb } from "@/db/usedb";
 import { router } from "expo-router";
 import React from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
-
 const Messages = () => {
+  const db = useDb();
+  const data = db.select().from(userTable).all();
+  console.log(data);
   return (
     <ScreenWrapper showPattern>
       <View style={styles.container}>
@@ -20,17 +24,11 @@ const Messages = () => {
 
         {/* BOTTOM BUTTONS */}
         <View style={styles.bottomButtons}>
-          <Button
-            style={styles.loginBtn}
-            onPress={() => router.push("/auth/login")}
-          >
+          <Button style={styles.loginBtn} onPress={() => router.push("/")}>
             <Text style={styles.btnText}>Login</Text>
           </Button>
 
-          <Button
-            style={styles.signupBtn}
-            onPress={() => router.push("/auth/register")}
-          >
+          <Button style={styles.signupBtn} onPress={() => router.push("/")}>
             <Text style={styles.btnText}>Sign Up</Text>
           </Button>
         </View>

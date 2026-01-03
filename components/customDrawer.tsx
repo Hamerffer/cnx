@@ -2,17 +2,26 @@ import { colors, spacingX, spacingY } from "@/constants/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { DrawerContentScrollView } from "@react-navigation/drawer";
 import { Href, useRouter } from "expo-router";
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  StyleSheet,
+  Text,
+  ToastAndroid,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 import { useAuth } from "@/context/AuthContext";
 import { useUser } from "@/context/user-context";
 import { logoutApi } from "@/services/auth.service";
-import { clearUser } from "@/services/db";
+import React from "react";
+// import { clearUser } from "@/services/db";
 
 export default function CustomDrawer(props: any) {
   const router = useRouter();
   const { setAuthToken } = useAuth();
-  const { user } = useUser();
+  const { user, clearUserContext } = useUser();
+
   const handleLogout = async () => {
     Alert.alert("Logout", "Are you sure you want to logout?", [
       { text: "Cancel", style: "cancel" },
@@ -22,12 +31,12 @@ export default function CustomDrawer(props: any) {
         onPress: async () => {
           try {
             await logoutApi();
-          } catch (e) {}
+          } catch (e: any) {}
 
           await setAuthToken(null);
 
-          await clearUser();
-
+          await clearUserContext();
+          ToastAndroid.show("Logout Success", ToastAndroid.LONG);
           router.replace("/");
         },
       },

@@ -1,351 +1,567 @@
-import ChartSkeleton from "@/components/skeletons/chart-skeleton";
-import TradeBottomSheet from "@/components/trade/trade-form";
-import { colors, radius, spacingX, spacingY } from "@/constants/theme";
-import { useTrade } from "@/context/trade-context";
-import { scale, verticalScale } from "@/utils/styling";
-import React from "react";
-import { Dimensions, StyleSheet, View } from "react-native";
+import { colors } from "@/constants/theme";
+import { useSocket } from "@/socket/use-sockets";
+import { useLocalSearchParams } from "expo-router";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { WebView, WebViewMessageEvent } from "react-native-webview";
 
-import { WebView } from "react-native-webview";
+/* ================= TYPES ================= */
+type Candle = {
+  o: number;
+  h: number;
+  l: number;
+  c: number;
+  s: number;
+  e: number;
+  pair: string;
+  v: number;
+};
 
-const { width, height } = Dimensions.get("window");
-
-// CONFIG
-const SYMBOL = "EURUSDT";
-const INTERVAL = "5m";
-const REFRESH_MS = 1000;
+const INTERVALS = [1, 5, 15];
 
 export default function ChartScreen() {
-  const html = `
+  /* ================= ROUTE ================= */
+  const { s } = useLocalSearchParams<{ s?: string }>();
+  const symbol = s ? decodeURIComponent(s) : "USD/JPY";
+
+  /* ================= STATE ================= */
+  const webRef = useRef<WebView>(null);
+  const chartReady = useRef(false);
+  const [webViewKey, setWebViewKey] = useState(Date.now());
+
+  const { isConnected, emit, subscribe } = useSocket();
+
+  const [loading, setLoading] = useState(true);
+  const [interval, setInterval] = useState(1);
+  const [currentPrice, setCurrentPrice] = useState<number | null>(null);
+  const [prevPrice, setPrevPrice] = useState<number | null>(null);
+  const [webViewLoaded, setWebViewLoaded] = useState(false);
+
+  /* ================= RESET ON SYMBOL CHANGE ================= */
+  useEffect(() => {
+    console.log(`Symbol changed to: ${symbol}`);
+    setLoading(true);
+    setCurrentPrice(null);
+    setPrevPrice(null);
+    chartReady.current = false;
+    setWebViewLoaded(false);
+    // Force WebView remount
+    setWebViewKey(Date.now());
+  }, [symbol]);
+
+  /* ================= SOCKET ================= */
+  useEffect(() => {
+    if (!isConnected || !chartReady.current) return;
+
+    console.log(`Subscribing to: ${symbol}`);
+    emit("subscribe", symbol);
+
+    const unsubscribe = subscribe("marketData", (data: Candle) => {
+      if (!chartReady.current || !webRef.current) return;
+      console.log(data);
+      webRef.current.postMessage(JSON.stringify({ type: "CANDLE", data }));
+
+      setPrevPrice((prev) => currentPrice ?? prev);
+      setCurrentPrice(+data.c);
+    });
+
+    return () => {
+      console.log(`Unsubscribing from: ${symbol}`);
+      emit("unsubscribe", symbol);
+      unsubscribe();
+    };
+  }, [isConnected, symbol, chartReady.current]);
+
+  /* ================= SEND INTERVAL ================= */
+  useEffect(() => {
+    if (!chartReady.current || !webRef.current) return;
+
+    webRef.current.postMessage(
+      JSON.stringify({ type: "INTERVAL", value: interval })
+    );
+  }, [interval, chartReady.current]);
+
+  /* ================= HANDLE WEBVIEW LOAD ================= */
+  const handleWebViewLoad = useCallback(() => {
+    console.log("WebView loaded");
+    setWebViewLoaded(true);
+  }, []);
+
+  const handleWebViewLoadEnd = useCallback(() => {
+    console.log("WebView load ended");
+    // Small delay to ensure WebView is fully ready
+    setTimeout(() => {
+      chartReady.current = true;
+      setLoading(false);
+
+      // Initialize chart
+      if (webRef.current) {
+        webRef.current.postMessage(JSON.stringify({ type: "INIT", symbol }));
+        webRef.current.postMessage(
+          JSON.stringify({ type: "INTERVAL", value: interval })
+        );
+      }
+    }, 300);
+  }, [interval, symbol]);
+
+  const handleWebViewError = useCallback((syntheticEvent: any) => {
+    const { nativeEvent } = syntheticEvent;
+    console.warn("WebView error:", nativeEvent);
+    setLoading(false);
+  }, []);
+
+  const handleWebViewMessage = useCallback((event: WebViewMessageEvent) => {
+    const message = event.nativeEvent.data;
+    console.log("Message from WebView:", message);
+
+    if (message === "CHART_READY") {
+      chartReady.current = true;
+      setLoading(false);
+    }
+  }, []);
+
+  /* ================= HTML TEMPLATE ================= */
+  const getHtmlContent = useCallback(() => {
+    return `
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Chart</title>
   <style>
-    html, body {
+    * {
       margin: 0;
       padding: 0;
-      background: ${colors.background};
+      box-sizing: border-box;
+    }
+    
+    html, body {
       width: 100%;
       height: 100%;
       overflow: hidden;
-      font-family: Arial, sans-serif;
+      background-color: ${colors.background};
     }
-
-    #header {
-      height: 56px;
-      padding: 8px 12px;
-      background: ${colors.surface};
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      border-bottom: 1px solid ${colors.border};
+    
+    #container {
+      width: 100%;
+      height: 100%;
+      position: relative;
     }
-
-    #pair {
-      color: ${colors.textPrimary};
-      font-size: 14px;
-      font-weight: bold;
-    }
-
-    #meta {
-      display: flex;
-      gap: 12px;
-      font-size: 12px;
-      color: ${colors.textSecondary};
-    }
-
-    #price {
-      font-weight: bold;
-    }
-
+    
     #chart {
       width: 100%;
-      height: ${height - 56}px;
+      height: 100%;
+    }
+    
+    #status {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: white;
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      z-index: 100;
+      background: rgba(0,0,0,0.5);
+      padding: 5px 10px;
+      border-radius: 3px;
+      display: none;
     }
   </style>
 </head>
-
 <body>
-  <!-- HEADER -->
-  <div id="header" class=${colors.background}>
-    <div id="pair">${SYMBOL} · M5</div>
-    <div id="meta">
-      <div id="price">--</div>
-      <div id="change">--</div>
-    </div>
+  <div id="container">
+    <div id="status">Loading chart...</div>
+    <div id="chart"></div>
   </div>
 
-  <!-- CHART -->
-  <div id="chart"></div>
-
-  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
-
+  <script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+  
   <script>
-    let chart;
-    let candleSeries;
-    let lastCandleTime = 0;
-
-    async function fetchCandles(limit = 200) {
-      const res = await fetch(
-        "https://api.binance.com/api/v3/klines?symbol=${SYMBOL}&interval=${INTERVAL}&limit=" + limit
-      );
-      const data = await res.json();
-      return data.map(c => ({
-        time: c[0] / 1000,
-        open: +c[1],
-        high: +c[2],
-        low: +c[3],
-        close: +c[4],
-      }));
-    }
-
-    function updateHeader(candle, prev) {
-      const priceEl = document.getElementById("price");
-      const changeEl = document.getElementById("change");
-
-      priceEl.textContent = candle.close.toFixed(2);
-
-      if (prev) {
-        const diff = candle.close - prev.close;
-        const pct = (diff / prev.close) * 100;
-        const color = diff >= 0 ? "${colors.positive}" : "${colors.negative}";
-
-        changeEl.textContent =
-          (diff >= 0 ? "+" : "") + diff.toFixed(2) +
-          " (" + pct.toFixed(2) + "%)";
-
-        changeEl.style.color = color;
-        priceEl.style.color = color;
+    (function() {
+      console.log('Chart script loading...');
+      
+      let chart = null;
+      let series = null;
+      let currentInterval = 1;
+      const candles = new Map();
+      let isChartReady = false;
+      let pendingMessages = [];
+      
+      function showStatus(text) {
+        const statusEl = document.getElementById('status');
+        if (statusEl) {
+          statusEl.textContent = text;
+          statusEl.style.display = 'block';
+        }
       }
-    }
-
-    async function initChart() {
-      chart = LightweightCharts.createChart(
-        document.getElementById("chart"),
-        {
-          width: window.innerWidth,
-          height: ${height - 56},
-          layout: {
-            background: { color: "${colors.background}" },
-            textColor: "${colors.textSecondary}",
-          },
-          grid: {
-            vertLines: { color: "${colors.divider}" },
-            horzLines: { color: "${colors.divider}" },
-          },
-          rightPriceScale: {
-            borderColor: "${colors.border}",
-          },
-          timeScale: {
-            borderColor: "${colors.border}",
-            timeVisible: true,
-            secondsVisible: false,
-          },
-          crosshair: {
-            mode: LightweightCharts.CrosshairMode.Normal,
-          },
+      
+      function hideStatus() {
+        const statusEl = document.getElementById('status');
+        if (statusEl) {
+          statusEl.style.display = 'none';
         }
-      );
-
-      candleSeries = chart.addSeries(
-        LightweightCharts.CandlestickSeries,
-        {
-          upColor: "${colors.primary}",
-          downColor: "${colors.negative}",
-          wickUpColor: "${colors.positive}",
-          wickDownColor: "${colors.negative}",
-          borderVisible: false,
+      }
+      
+      function initChart() {
+        console.log('Initializing chart...');
+        showStatus('Initializing chart...');
+        
+        try {
+          // Clean up existing chart
+          if (chart) {
+            chart.remove();
+            chart = null;
+            series = null;
+          }
+          
+          const container = document.getElementById('chart');
+          if (!container) {
+            console.error('Chart container not found');
+            return;
+          }
+          
+          // Clear container
+          container.innerHTML = '';
+          
+          chart = LightweightCharts.createChart(container, {
+            width: container.clientWidth,
+            height: container.clientHeight,
+            layout: {
+              background: { color: '${colors.background}' },
+              textColor: '#d1d5db',
+            },
+            grid: {
+              vertLines: { color: '#1e293b' },
+              horzLines: { color: '#1e293b' },
+            },
+            timeScale: {
+              timeVisible: true,
+              secondsVisible: true,
+              borderColor: '#1e293b',
+            },
+            crosshair: {
+              mode: LightweightCharts.CrosshairMode.Normal,
+            },
+          });
+          
+          series = chart.addCandlestickSeries({
+            upColor: '${colors.primary}',
+            downColor: '#ef4444',
+            borderUpColor: '${colors.primary}',
+            borderDownColor: '#ef4444',
+            wickUpColor: '${colors.primary}',
+            wickDownColor: '#ef4444',
+            borderVisible: false,
+          });
+          
+          // Set empty data initially
+          series.setData([]);
+          
+          // Handle resize
+          window.addEventListener('resize', handleResize);
+          
+          isChartReady = true;
+          hideStatus();
+          console.log('Chart initialized successfully');
+          
+          // Notify React Native that chart is ready
+          if (window.ReactNativeWebView) {
+            window.ReactNativeWebView.postMessage('CHART_READY');
+          }
+          
+          // Process any pending messages
+          processPendingMessages();
+          
+        } catch (error) {
+          console.error('Error initializing chart:', error);
+          showStatus('Error: ' + error.message);
         }
-      );
-
-      const candles = await fetchCandles();
-     candleSeries.setData(candles);
-
-// tell React Native chart is ready
-window.ReactNativeWebView.postMessage("CHART_READY");
-
-
-      lastCandleTime = candles[candles.length - 1].time;
-      updateHeader(candles[candles.length - 1], candles[candles.length - 2]);
-
-      startLiveUpdates();
-    }
-
-    async function startLiveUpdates() {
-      setInterval(async () => {
-        const latest = await fetchCandles(2);
-        const candle = latest[latest.length - 1];
-        const prev = latest[latest.length - 2];
-
-        if (candle.time === lastCandleTime) {
-          candleSeries.update(candle);
+      }
+      
+      function handleResize() {
+        if (chart && document.getElementById('chart')) {
+          const container = document.getElementById('chart');
+          chart.resize(container.clientWidth, container.clientHeight);
+        }
+      }
+      
+      function resetChart() {
+        console.log('Resetting chart...');
+        candles.clear();
+        if (series) {
+          series.setData([]);
+        }
+      }
+      
+      function setIntervalValue(interval) {
+        console.log('Setting interval to:', interval);
+        currentInterval = interval;
+        resetChart();
+      }
+      
+      function addCandle(data) {
+        if (!series || !isChartReady) return;
+        
+        const bucket = Math.floor(data.s / 1000 / currentInterval) * currentInterval;
+        const existingCandle = candles.get(bucket);
+        
+        if (existingCandle) {
+          existingCandle.high = Math.max(existingCandle.high, +data.h);
+          existingCandle.low = Math.min(existingCandle.low, +data.l);
+          existingCandle.close = +data.c;
         } else {
-          candleSeries.update(candle);
-          lastCandleTime = candle.time;
+          candles.set(bucket, {
+            time: bucket,
+            open: +data.o,
+            high: +data.h,
+            low: +data.l,
+            close: +data.c,
+          });
         }
-
-        updateHeader(candle, prev);
-      }, ${REFRESH_MS});
-    }
-
-    window.onload = initChart;
+        
+        const candleArray = Array.from(candles.values()).sort((a, b) => a.time - b.time);
+        series.setData(candleArray);
+        
+        // Auto-scroll to latest
+        chart.timeScale().scrollToRealTime();
+      }
+      
+      function processPendingMessages() {
+        while (pendingMessages.length > 0) {
+          const message = pendingMessages.shift();
+          handleMessage(message);
+        }
+      }
+      
+      function handleMessage(message) {
+        console.log('Received message:', message);
+        
+        try {
+          const data = JSON.parse(message);
+          
+          if (!isChartReady) {
+            pendingMessages.push(message);
+            return;
+          }
+          
+          switch (data.type) {
+            case 'INIT':
+              console.log('Init command received');
+              initChart();
+              break;
+            case 'RESET':
+              resetChart();
+              break;
+            case 'INTERVAL':
+              setIntervalValue(data.value);
+              break;
+            case 'CANDLE':
+              addCandle(data.data);
+              break;
+            default:
+              console.warn('Unknown message type:', data.type);
+          }
+        } catch (error) {
+          console.error('Error processing message:', error);
+        }
+      }
+      
+      // Message handlers
+      function onMessage(event) {
+        console.log('Message event received');
+        handleMessage(event.data);
+      }
+      
+      // Setup message listeners
+      if (window.ReactNativeWebView) {
+        // For React Native WebView
+        document.addEventListener('message', function(e) {
+          onMessage(e);
+        });
+      }
+      
+      window.addEventListener('message', onMessage);
+      
+      // Initialize on load
+      window.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM loaded, initializing chart...');
+        // Small delay to ensure everything is ready
+        setTimeout(initChart, 100);
+      });
+      
+      // If DOM is already loaded
+      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        setTimeout(initChart, 100);
+      }
+      
+      // Cleanup
+      window.addEventListener('beforeunload', function() {
+        if (chart) {
+          chart.remove();
+          chart = null;
+          series = null;
+        }
+        window.removeEventListener('resize', handleResize);
+        window.removeEventListener('message', onMessage);
+        document.removeEventListener('message', onMessage);
+      });
+      
+    })();
   </script>
 </body>
 </html>
-  `;
-  // const [showTradeForm, setShowTradeForm] = React.useState(false);
-  const { showTradeForm, setShowTradeForm } = useTrade();
-  const [loading, setLoading] = React.useState(true);
+    `;
+  }, []);
+
+  /* ================= PRICE COLOR ================= */
+  const priceColor =
+    prevPrice === null || currentPrice === null
+      ? "#9ca3af" // neutral
+      : currentPrice > prevPrice
+      ? colors.primary // price up
+      : currentPrice < prevPrice
+      ? colors.sell // price down
+      : "#9ca3af";
+
+  /* ================= UI ================= */
 
   return (
     <View style={styles.container}>
-      <WebView
-        source={{ html }}
-        originWhitelist={["*"]}
-        javaScriptEnabled
-        domStorageEnabled
-        mixedContentMode="always"
-        allowFileAccess
-        allowUniversalAccessFromFileURLs
-        scrollEnabled={false}
-        style={{ width, height }}
-        onMessage={(event) => {
-          if (event.nativeEvent.data === "CHART_READY") {
-            setLoading(false);
-          }
-        }}
-      />
-      {loading && <ChartSkeleton />}
+      {/* HEADER */}
+      <View style={styles.header}>
+        <Text style={styles.symbol}>{symbol}</Text>
 
-      <TradeBottomSheet
-        visible={showTradeForm}
-        onClose={() => setShowTradeForm(false)}
-      />
+        <Text style={[styles.price, { color: priceColor }]}>
+          {currentPrice ? currentPrice.toFixed(2) : "--"}
+        </Text>
+      </View>
+
+      {/* INTERVAL BAR */}
+      <View style={styles.intervalBar}>
+        {INTERVALS.map((i) => (
+          <TouchableOpacity
+            key={i}
+            onPress={() => setInterval(i)}
+            style={[styles.intervalBtn, interval === i && styles.active]}
+          >
+            <Text style={styles.intervalText}>{i}s</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* CHART */}
+      <View style={styles.chart}>
+        {loading && (
+          <View style={styles.loader}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.loadingText}>Loading chart...</Text>
+          </View>
+        )}
+
+        <WebView
+          key={`webview_${symbol}_${webViewKey}`}
+          ref={webRef}
+          source={{ html: getHtmlContent() }}
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+          mixedContentMode="always"
+          onLoad={handleWebViewLoad}
+          onLoadEnd={handleWebViewLoadEnd}
+          onError={handleWebViewError}
+          onHttpError={handleWebViewError}
+          onMessage={handleWebViewMessage}
+          startInLoadingState={false}
+          renderLoading={() => (
+            <View style={styles.loader}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          )}
+          style={styles.webview}
+          onContentProcessDidTerminate={() => {
+            console.log("WebView crashed, reloading...");
+            setWebViewKey(Date.now());
+            setLoading(true);
+          }}
+          setBuiltInZoomControls={false}
+          setDisplayZoomControls={false}
+          allowsInlineMediaPlayback={true}
+          mediaPlaybackRequiresUserAction={false}
+        />
+      </View>
     </View>
   );
 }
 
+/* ================= STYLES ================= */
 const styles = StyleSheet.create({
-  paperModal: {
-    justifyContent: "flex-end",
-    margin: 0,
-  },
-
-  sheet: {
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacingX._15,
-    paddingVertical: spacingY._20,
-    borderTopLeftRadius: radius._20,
-    borderTopRightRadius: radius._20,
-  },
-
-  formHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: spacingY._15,
-  },
-
-  symbol: {
-    fontSize: scale(16),
-    fontWeight: "700",
-    color: colors.textPrimary,
-  },
-
-  sub: {
-    fontSize: scale(12),
-    color: colors.textSecondary,
-    marginTop: spacingY._5,
-  },
-
-  close: {
-    fontSize: scale(18),
-    color: colors.textSecondary,
-  },
-
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: spacingY._12,
-  },
-
-  label: {
-    fontSize: scale(13),
-    color: colors.textSecondary,
-  },
-
-  inputBox: {
-    width: scale(120),
-    height: verticalScale(36),
-    borderRadius: radius._6,
-    backgroundColor: colors.surfaceLight,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  inputText: {
-    fontSize: scale(14),
-    fontWeight: "600",
-    color: colors.textPrimary,
-  },
-
-  placeholder: {
-    fontSize: scale(14),
-    color: colors.textMuted,
-  },
-
-  actionRow: {
-    flexDirection: "row",
-    marginTop: spacingY._20,
-  },
-
-  actionBtn: {
-    flex: 1,
-  },
-
-  sell: {
-    backgroundColor: colors.sell,
-    borderTopLeftRadius: radius._10,
-    borderBottomLeftRadius: radius._10,
-  },
-
-  buy: {
-    backgroundColor: colors.buy,
-    borderTopRightRadius: radius._10,
-    borderBottomRightRadius: radius._10,
-  },
-
-  // new css
   container: {
     flex: 1,
     backgroundColor: colors.background,
   },
-  overlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.45)",
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: "#1e293b",
+  },
+  symbol: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  price: {
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  intervalBar: {
+    flexDirection: "row",
+    padding: 8,
+    gap: 8,
+    backgroundColor: colors.background,
+  },
+  intervalBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: "#1e293b",
+    borderRadius: 6,
+  },
+  active: {
+    backgroundColor: colors.primary,
+  },
+  intervalText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  chart: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  webview: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  loader: {
+    ...StyleSheet.absoluteFillObject,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: colors.background,
+    zIndex: 10,
   },
-
-  form: {
-    width: "90%",
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 16,
-  },
-
-  actionText: {
+  loadingText: {
     color: "#fff",
-    fontWeight: "700",
-    fontSize: 16,
+    marginTop: 12,
+    fontSize: 14,
   },
-  //new css
 });

@@ -3,7 +3,7 @@ import ScreenWrapper from "@/components/screen-Wrapper";
 import { colors } from "@/constants/theme";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import * as SecureStore from "expo-secure-store";
+
 import React, { useState } from "react";
 import {
   Alert,
@@ -11,13 +11,14 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  ToastAndroid,
   TouchableOpacity,
   View,
 } from "react-native";
 
 import { useAuth } from "@/context/AuthContext";
+import { getUser, saveUser } from "@/db/queries/user";
 import { getSessionApi, loginApi } from "@/services/auth.service";
-import { getUser, saveUser } from "@/services/db";
 
 export default function BrokerLoginScreen() {
   const { brokerId } = useLocalSearchParams<{ brokerId: string }>();
@@ -29,64 +30,63 @@ export default function BrokerLoginScreen() {
   const [loading, setLoading] = useState(false);
 
   /* ---------- LOGIN HANDLER ---------- */
-const handleLogin = async () => {
-  if (!login || !password) {
-    Alert.alert("Error", "Login and password are required");
-    return;
-  }
+  const handleLogin = async () => {
+    if (!login || !password) {
+      Alert.alert("Error", "Login and password are required");
+      return;
+    }
 
-  try {
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    // 1️⃣ LOGIN (TOKEN ONLY)
-    const loginRes: any = await loginApi({
-      brokerId,
-      loginId: login,
-      password,
-    });
+      // 1️⃣ LOGIN (TOKEN ONLY)
+      const loginRes: any = await loginApi({
+        brokerId,
+        loginId: login,
+        password,
+      });
 
-    const token = loginRes.json.token;
-    await setAuthToken(token);
+      const token = loginRes.json.token;
+      await setAuthToken(token);
 
-    // 2️⃣ FETCH FULL SESSION USER
-    const sessionRes: any = await getSessionApi();
-    const apiUser = sessionRes.json.user;
+      // 2️⃣ FETCH FULL SESSION USER
+      const sessionRes: any = await getSessionApi();
+      const apiUser = sessionRes.json.user;
+      ToastAndroid.show("Login Success", ToastAndroid.LONG);
+      // 3️⃣ SAVE FULL USER TO SQLITE
+      await saveUser({
+        id: apiUser.id,
+        name: apiUser.name,
+        email: apiUser.email,
+        login: apiUser.login,
+        brokerId: apiUser.brokerId,
 
-    // 3️⃣ SAVE FULL USER TO SQLITE
-    await saveUser({
-      id: apiUser.id,
-      name: apiUser.name,
-      email: apiUser.email,
-      login: apiUser.login,
-      brokerId: apiUser.brokerId,
+        serverId: apiUser.server?.id ?? null,
+        serverName: apiUser.server?.name ?? null,
 
-      serverId: apiUser.server?.id ?? null,
-      serverName: apiUser.server?.name ?? null,
+        accountTypeId: apiUser.accountType?.id ?? null,
+        accountTypeName: apiUser.accountType?.name ?? null,
 
-      accountTypeId: apiUser.accountType?.id ?? null,
-      accountTypeName: apiUser.accountType?.name ?? null,
+        balance: apiUser.balance,
+        role: JSON.stringify(apiUser.role),
 
-      balance: apiUser.balance,
-      role: JSON.stringify(apiUser.role),
+        updatedAt: apiUser.updatedAt,
+      });
 
-      updatedAt: apiUser.updatedAt,
-    });
+      const savedUser = await getUser();
+      console.log("📦 SQLITE USER 👉", savedUser);
 
-    const savedUser = await getUser();
-    console.log("📦 SQLITE USER 👉", savedUser);
-
-    router.replace("/(drawer)/(tabs)/quotes");
-  } catch (err: any) {
-    Alert.alert("Login Failed", err?.message || "Invalid credentials");
-  } finally {
-    setLoading(false);
-  }
-};
-
+      router.replace("/(drawer)/(tabs)/quotes");
+    } catch (err: any) {
+      Alert.alert("Login Failed", err?.message || "Invalid credentials");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <ScreenWrapper>
-      <AppHeader title="Login" />
+      <AppHeader title="Login"  />
 
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         {/* ---------- Broker Title ---------- */}

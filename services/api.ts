@@ -1,12 +1,12 @@
-import { ENV } from '@/constants/env';
-import axios from 'axios';
-
+import axios from "axios";
 const api = axios.create({
-  baseURL: ENV.API_URL,
+  baseURL: process.env.EXPO_PUBLIC_API_URL,
   timeout: 30000,
-  headers: { 'Content-Type': 'application/json' },
+  headers: { "Content-Type": "application/json" },
+  withCredentials: true,
 });
 
+console.log("API URL:", process.env.EXPO_PUBLIC_API_URL);
 // Add auth token to requests
 api.interceptors.request.use((config) => {
   // Add token here when needed
@@ -24,7 +24,7 @@ api.interceptors.response.use(
 );
 
 type ApiFetchOptions = {
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   params?: Record<string, any>;
   body?: any;
 };
@@ -33,11 +33,11 @@ export async function apiFetch<T>(
   path: string,
   options?: ApiFetchOptions | Record<string, any>
 ): Promise<T> {
-  const isLegacy = options && !('method' in options) && !('body' in options);
-  
+  const isLegacy = options && !("method" in options) && !("body" in options);
+
   const { data } = await api.request({
     url: path,
-    method: isLegacy ? 'GET' : options?.method ?? 'GET',
+    method: isLegacy ? "GET" : options?.method ?? "GET",
     params: isLegacy ? options : options?.params,
     data: !isLegacy ? options?.body : undefined,
   });
@@ -46,9 +46,9 @@ export async function apiFetch<T>(
 }
 
 export const setAuthToken = (token: string) => {
-  api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 };
 
 export const clearAuthToken = () => {
-  delete api.defaults.headers.common['Authorization'];
+  delete api.defaults.headers.common["Authorization"];
 };

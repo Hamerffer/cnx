@@ -2,7 +2,8 @@ import ScreenWrapper from "@/components/screen-Wrapper";
 import { colors, radius, spacingX, spacingY } from "@/constants/theme";
 import * as Clipboard from "expo-clipboard";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import React, { useState } from "react";
+
 import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 export default function SuccessScreen() {

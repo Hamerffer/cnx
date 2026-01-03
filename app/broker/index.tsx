@@ -309,7 +309,7 @@ export default function BrokerSearchScreen() {
 
   return (
     <ScreenWrapper>
-      <AppHeader title="Brokers" />
+      <AppHeader title="Brokers" backTo="/" />
 
       <View style={styles.container}>
         {/* ---------- Search ---------- */}

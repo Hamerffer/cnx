@@ -45,7 +45,15 @@ export default function QuoteModal({
 
         {/* OPTIONS */}
         <Option title="New Order" onPress={() => console.log("New Order")} />
-        <Option title="Chart" onPress={() => console.log("Chart")} />
+        <Option
+          title="Chart"
+          onPress={() =>
+            router.push({
+              pathname: "/(drawer)/(tabs)/charts",
+              params: { s: symbol },
+            })
+          }
+        />
         <Option
           title="Properties"
           onPress={() => router.push("/(drawer)/(tabs)/properties")}
